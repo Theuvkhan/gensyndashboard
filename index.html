@@ -29,6 +29,13 @@
     .pager button{padding:8px 14px;border:none;border-radius:8px;background:#1b2a4a;color:#d9e6ff;cursor:pointer}
     .pager button:disabled{opacity:.4;cursor:not-allowed}
     .pill{background:#15233d;border-radius:999px;padding:6px 12px;color:#cfe0ff}
+
+    /* Blue X/Twitter link just for the name */
+    .x-link{
+      color:#1DA1F2 !important;
+      font-weight:700;
+    }
+    .x-link:hover{ text-decoration:underline; }
   </style>
 </head>
 <body>
@@ -84,11 +91,12 @@
 
   <footer class="muted">
     Auto-updates every 30 s • Data from public Gensyn endpoints<br/>
-    Made with ❤️ by @TheUvKhan
+    Made with ❤️ by
+    <a class="x-link" href="https://x.com/TheUvKhan" target="_blank" rel="noopener">@TheUvKhan</a>
   </footer>
 
   <script>
-    // Use our proxy. 'summary' gives normalized stats (avg block time, completed tx, nodes)
+    // Use our proxy summary (api/gensyn.js) for normalized stats
     const API = {
       summary:     '/api/gensyn?path=summary',
       leaderboard: '/api/gensyn?path=leaderboard'
