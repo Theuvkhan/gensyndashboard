@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>⚡ Gensyn Node Dashboard</title>
+  <style>
+    body {
+      background-color: #0c1424;
+      color: #fff;
+      font-family: "Inter", sans-serif;
+      text-align: center;
+      margin: 0;
+      padding: 0;
+    }
+    h1 {
+      font-size: 2rem;
+      margin-top: 1rem;
+    }
+    .stats {
+      display: flex;
+      justify-content: center;
+      margin: 1.5rem 0;
+      gap: 2rem;
+    }
+    .stat {
+      background: #111b33;
+      padding: 1rem 2rem;
+      border-radius: 12px;
+      box-shadow: 0 0 8px rgba(255, 255, 255, 0.05);
+    }
+    .stat-value {
+      font-size: 1.6rem;
+      font-weight: bold;
+      color: #00ffae;
+    }
+    .leaderboard {
+      width: 80%;
+      margin: 2rem auto;
+      border-collapse: collapse;
+    }
+    .leaderboard th, .leaderboard td {
+      border: 1px solid #1f2c44;
+      padding: 0.6rem;
+    }
+    .leaderboard th {
+      background: #15233d;
+    }
+    .leaderboard tr:nth-child(even) {
+      background: #0f1a30;
+    }
+    .offline {
+      color: #ff4747;
+    }
+    .online {
+      color: #00ffae;
+    }
+    .peer-search {
+      margin-top: 2rem;
+    }
+    input {
+      padding: 0.6rem;
+      width: 350px;
+      border-radius: 8px;
+      border: none;
+    }
+    button {
+      padding: 0.6rem 1.2rem;
+      background-color: #00ffae;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    button:hover {
+      background-color: #00d78a;
+    }
+    footer {
+      margin-top: 3rem;
+      font-size: 0.9rem;
+      opacity: 0.6;
+    }
+  </style>
+</head>
+<body>
+  <h1>⚡ Gensyn Node Dashboard</h1>
+  <div class="stats">
+    <div class="stat">
+      <div>Avg Block Time</div>
+      <div id="avgBlockTime" class="stat-value">--</div>
+    </div>
+    <div class="stat">
+      <div>Completed Transactions</div>
+      <div id="completedTx" class="stat-value">--</div>
+    </div>
+    <div class="stat">
+      <div>Nodes Connected</div>
+      <div id="nodesConnected" class="stat-value">--</div>
+    </div>
+  </div>
+
+  <h2>🏆 Leaderboard (Top 10)</h2>
+  <table class="leaderboard">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Peer</th>
+        <th>Score</th>
+        <th>Reward</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody id="leaderboardBody">
+      <tr><td colspan="5">Loading...</td></tr>
+    </tbody>
+  </table>
+
+  <div class="peer-search">
+    <h3>🔍 Node Analytics (by Peer ID)</h3>
+    <input type="text" id="peerIdInput" placeholder="Enter Peer ID..." />
+    <button onclick="lookupPeer()">Lookup</button>
+    <p id="peerResult"></p>
+  </div>
+
+  <footer>
+    Auto-updates every 30s • Data from public Gensyn endpoints<br>
+    Made with ❤️ by <a href="https://github.com/TheUvKhan" target="_blank" style="color:#00ffae;">@TheUvKhan</a>
+  </footer>
+
+  <script>
+    const API_BASE = "https://api.gensyn.network"; // Replace if different
+
+    async function fetchDashboardData() {
+      try {
+        // Replace with real API endpoint once available
+        const data = await fetch(`${API_BASE}/dashboard`).then(res => res.json());
+
+        document.getElementById("avgBlockTime").textContent = data.avg_block_time + "s";
+        document.getElementById("completedTx").textContent = data.completed_transactions.toLocaleString();
+        document.getElementById("nodesConnected").textContent = data.nodes_connected.toLocaleString();
+
+        const tbody = document.getElementById("leaderboardBody");
+        tbody.innerHTML = "";
+        data.leaderboard.slice(0, 10).forEach((node, i) => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${i + 1}</td>
+            <td>${node.peer}</td>
+            <td>${node.score}</td>
+            <td>${node.reward}</td>
+            <td class="${node.status === 'online' ? 'online' : 'offline'}">${node.status}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      } catch (err) {
+        console.error("Error fetching dashboard:", err);
+        document.getElementById("leaderboardBody").innerHTML =
+          "<tr><td colspan='5'>Error loading data</td></tr>";
+      }
+    }
+
+    async function lookupPeer() {
+      const peerId = document.getElementById("peerIdInput").value.trim();
+      const result = document.getElementById("peerResult");
+      if (!peerId) return (result.textContent = "Enter a peer ID first.");
+      result.textContent = "Searching...";
+      try {
+        const data = await fetch(`${API_BASE}/peer/${peerId}`).then(res => res.json());
+        if (!data || !data.peer)
+          result.textContent = "No peer found in current snapshot.";
+        else
+          result.textContent = `Peer: ${data.peer}, Score: ${data.score}, Reward: ${data.reward}`;
+      } catch (err) {
+        console.error(err);
+        result.textContent = "Error fetching peer info.";
+      }
+    }
+
+    fetchDashboardData();
+    setInterval(fetchDashboardData, 30000); // auto-refresh every 30s
+  </script>
+</body>
+</html>
