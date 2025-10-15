@@ -4,99 +4,190 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>⚡ Gensyn Node Dashboard</title>
-  <style>
-    :root { --bg:#0b1324; --card:#111b33; --muted:#8fa4c9; --ok:#00ffae; --err:#ff5a5a; }
-    *{box-sizing:border-box}
-    body{margin:0;background:var(--bg);color:#fff;font-family:Inter,system-ui,Segoe UI,Arial}
-    h1{font-size:2rem;text-align:center;margin:16px 8px}
-    .stats{display:flex;flex-wrap:wrap;justify-content:center;gap:16px;margin:16px 0}
-    .stat{background:var(--card);padding:18px 24px;border-radius:14px;min-width:240px;text-align:center}
-    .label{font-size:.95rem;color:var(--muted);margin-bottom:6px}
-    .value{font-size:1.6rem;font-weight:700;color:var(--ok)}
-    h2{width:100%;text-align:center;margin:24px 0 8px}
-    table{width:92%;max-width:1100px;margin:0 auto;border-collapse:collapse;border-radius:12px;overflow:hidden}
-    th,td{padding:10px 12px;text-align:left;border-bottom:1px solid #1b2a4a}
-    th{background:#15233d;color:#d9e6ff}
-    tr:nth-child(even){background:#0f1a30}
-    .status.online{color:var(--ok)} .status.offline{color:var(--err)}
-    .center{display:flex;justify-content:center;align-items:center}
-    .peer-search{margin:26px 0}
-    .peer-search input{padding:10px 12px;width:420px;max-width:75vw;border:none;border-radius:8px}
-    .peer-search button{margin-left:8px;padding:10px 18px;border:none;border-radius:8px;background:var(--ok);color:#001b12;font-weight:700;cursor:pointer}
-    .muted{color:var(--muted)} footer{margin:32px 0;text-align:center}
-    a{color:var(--ok);text-decoration:none}
-    .pager{display:flex;gap:10px;justify-content:center;align-items:center;margin:14px 0 26px}
-    .pager button{padding:8px 14px;border:none;border-radius:8px;background:#1b2a4a;color:#d9e6ff;cursor:pointer}
-    .pager button:disabled{opacity:.4;cursor:not-allowed}
-    .pill{background:#15233d;border-radius:999px;padding:6px 12px;color:#cfe0ff}
 
-    /* Blue X/Twitter link just for the name */
-    .x-link{
-      color:#1DA1F2 !important;
-      font-weight:700;
+  <!-- Optional: a monospace/pixel-ish feel without external fonts -->
+  <style>
+    :root{
+      /* Gensyn-like palette (coffee browns + warm text + neon tag) */
+      --bg:#1b0f0b;            /* page background */
+      --panel:#2a1712;         /* cards/tables */
+      --panel-2:#24140f;       /* alt rows / headers */
+      --stroke:#3a221b;        /* subtle borders */
+      --text:#f4e8d7;          /* warm beige text */
+      --muted:#cdbba6;         /* muted text */
+      --tag:#95ff7a;           /* neon-y green for tags/accents */
+      --accent:#ffd59e;        /* soft highlight */
+      --bad:#ff7a7a;           /* offline */
     }
-    .x-link:hover{ text-decoration:underline; }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      background:var(--bg);
+      color:var(--text);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+      letter-spacing:.2px;
+      position:relative;
+      overflow-x:hidden;
+    }
+
+    /* Subtle centered ring watermark */
+    body::before{
+      content:"";
+      position:fixed;
+      inset:0;
+      background:
+        radial-gradient(transparent 35%, rgba(0,0,0,.55) 65%),
+        url("./gensyn-ring.png") center/360px no-repeat;
+      opacity:.08;
+      pointer-events:none;
+      z-index:0;
+    }
+
+    .wrap{position:relative; z-index:1; padding-bottom:48px;}
+
+    /* Top bar */
+    .top{
+      display:flex; align-items:center; gap:14px;
+      padding:18px 18px 10px; border-bottom:1px dashed var(--stroke);
+    }
+    .brand-ring{
+      width:32px; height:32px; background:url("./gensyn-ring.png") center/contain no-repeat;
+      filter:drop-shadow(0 0 0 #000);
+    }
+    .brand{font-size:26px; font-weight:700; text-transform:lowercase; letter-spacing:.8px}
+
+    h1{
+      margin:16px 18px; font-size:18px; font-weight:700; letter-spacing:3px;
+      text-transform:uppercase; color:var(--accent);
+      border-bottom:1px dashed var(--stroke); padding-bottom:10px;
+    }
+
+    /* Stats row */
+    .stats{display:flex; flex-wrap:wrap; gap:18px; padding:8px 18px 0}
+    .stat{
+      background:var(--panel);
+      border:1px solid var(--stroke);
+      min-width:260px; flex:1 1 260px;
+      border-radius:8px; padding:16px 18px;
+    }
+    .label{font-size:12px; color:var(--muted); text-transform:lowercase; margin-bottom:10px}
+    .value{font-size:36px; font-weight:800; letter-spacing:2px}
+    .mini-tag{
+      display:inline-block; font-size:11px; color:#091707; background:var(--tag);
+      padding:2px 7px; border-radius:4px; margin-left:8px; font-weight:700;
+    }
+
+    /* Section title */
+    h2{
+      margin:24px 18px 10px; font-size:16px; letter-spacing:2px; text-transform:uppercase;
+    }
+
+    /* Pager */
+    .pager{display:flex; align-items:center; gap:10px; margin:8px 18px 18px}
+    .pill{background:var(--panel-2); border:1px solid var(--stroke); border-radius:24px; padding:6px 12px; color:var(--muted)}
+    .btn{
+      padding:8px 14px; border-radius:6px; cursor:pointer;
+      border:1px solid var(--stroke); background:var(--panel-2); color:var(--text);
+    }
+    .btn:disabled{opacity:.45; cursor:not-allowed}
+
+    /* Table */
+    .table-wrap{padding:0 18px}
+    table{width:100%; border-collapse:collapse; background:var(--panel); border:1px solid var(--stroke); border-radius:10px; overflow:hidden}
+    th,td{padding:12px 14px; border-bottom:1px solid var(--stroke)}
+    th{background:var(--panel-2); color:var(--accent); text-align:left; font-weight:700; letter-spacing:.5px}
+    tr:nth-child(even){background:#23140e}
+    .status.online{color:var(--tag); font-weight:800}
+    .status.offline{color:var(--bad); font-weight:800}
+    .center{display:flex; justify-content:center; align-items:center}
+
+    /* Search */
+    .search-block{padding:22px 18px}
+    .search-title{font-size:16px; text-align:center}
+    .search-row{display:flex; justify-content:center; gap:10px; margin-top:10px}
+    input{
+      background:var(--panel); color:var(--text); border:1px solid var(--stroke);
+      padding:10px 12px; border-radius:8px; width:420px; max-width:80vw;
+    }
+    .action{background:var(--tag); color:#091707; border:1px solid #77d960; font-weight:900}
+    .muted{color:var(--muted)}
+
+    /* Footer */
+    footer{margin:26px 18px; text-align:center; color:var(--muted)}
+    a{color:var(--tag); text-decoration:none}
+    .x-link{color:#1DA1F2 !important; font-weight:800}
+    .x-link:hover{text-decoration:underline}
   </style>
 </head>
 <body>
-  <h1>⚡ Gensyn Node Dashboard</h1>
-
-  <div class="stats">
-    <div class="stat">
-      <div class="label">Avg Block Time</div>
-      <div id="avgBlockTime" class="value">--</div>
+  <div class="wrap">
+    <!-- Top bar -->
+    <div class="top">
+      <div class="brand-ring" aria-hidden="true"></div>
+      <div class="brand">gensyn</div>
     </div>
-    <div class="stat">
-      <div class="label">Completed Transactions</div>
-      <div id="completedTx" class="value">--</div>
-    </div>
-    <div class="stat">
-      <div class="label">Nodes Connected</div>
-      <div id="nodesConnected" class="value">--</div>
-    </div>
-  </div>
 
-  <h2>🏆 Leaderboard (Top 100)</h2>
-  <div class="pager">
-    <button id="prevBtn">◀ Prev</button>
-    <span class="pill"><span id="pageLabel">Page 1 / 10</span></span>
-    <button id="nextBtn">Next ▶</button>
-  </div>
+    <h1>Gensyn Testnet : Dashboard</h1>
 
-  <table>
-    <thead>
-      <tr>
-        <th style="width:60px">#</th>
-        <th>Peer</th>
-        <th style="width:160px">Score</th>
-        <th style="width:160px">Reward</th>
-        <th style="width:120px">Status</th>
-      </tr>
-    </thead>
-    <tbody id="leaderboardBody">
-      <tr><td class="center" colspan="5">Loading…</td></tr>
-    </tbody>
-  </table>
-
-  <div class="peer-search center">
-    <div>
-      <h3 class="center">🔎 Node Analytics (by Peer ID / Name)</h3>
-      <div class="center">
-        <input id="peerIdInput" placeholder="Enter Peer ID (e.g., Qm...) or name" />
-        <button id="lookupBtn">Lookup</button>
+    <!-- Stats -->
+    <div class="stats">
+      <div class="stat">
+        <div class="label">average block time <span class="mini-tag">on-chain</span></div>
+        <div id="avgBlockTime" class="value">--</div>
       </div>
-      <p id="peerResult" class="center muted"></p>
+      <div class="stat">
+        <div class="label">transactions <span class="mini-tag">all time</span></div>
+        <div id="completedTx" class="value">--</div>
+      </div>
+      <div class="stat">
+        <div class="label">users <span class="mini-tag">all time</span></div>
+        <div id="nodesConnected" class="value">--</div>
+      </div>
     </div>
-  </div>
 
-  <footer class="muted">
-    Auto-updates every 30 s • Data from public Gensyn endpoints<br/>
-    Made with ❤️ by
-    <a class="x-link" href="https://x.com/TheUvKhan" target="_blank" rel="noopener">@TheUvKhan</a>
-  </footer>
+    <h2>🏆 Leaderboard (Top 100)</h2>
+    <div class="pager">
+      <button id="prevBtn" class="btn">◀ Prev</button>
+      <span class="pill" id="pageLabel">Page 1 / 10</span>
+      <button id="nextBtn" class="btn">Next ▶</button>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:70px">#</th>
+            <th>Peer</th>
+            <th style="width:170px">Score</th>
+            <th style="width:170px">Reward</th>
+            <th style="width:120px">Status</th>
+          </tr>
+        </thead>
+        <tbody id="leaderboardBody">
+          <tr><td colspan="5" class="center">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Search -->
+    <div class="search-block">
+      <div class="search-title">🔎 Node Analytics (by Peer ID / Name)</div>
+      <div class="search-row">
+        <input id="peerIdInput" placeholder="Enter Peer ID (e.g., Qm...) or name" />
+        <button id="lookupBtn" class="btn action">Lookup</button>
+      </div>
+      <p id="peerResult" class="center muted" style="margin-top:10px"></p>
+    </div>
+
+    <footer>
+      Auto-updates every 30 s • Data from public Gensyn endpoints<br/>
+      Made with ❤️ by <a class="x-link" href="https://x.com/TheUvKhan" target="_blank" rel="noopener">@TheUvKhan</a>
+    </footer>
+  </div>
 
   <script>
-    // Use our proxy summary (api/gensyn.js) for normalized stats
+    /* Use your existing proxy summary (api/gensyn.js) */
     const API = {
       summary:     '/api/gensyn?path=summary',
       leaderboard: '/api/gensyn?path=leaderboard'
@@ -108,22 +199,21 @@
     let currentPage = 1;
     const totalPages = Math.ceil(TOP_N / PAGE_SIZE);
 
-    function fmt(x){ return (x ?? '--').toLocaleString ? x.toLocaleString() : x; }
+    const fmt = x => (x ?? '--').toLocaleString ? x.toLocaleString() : x;
 
     async function getJSON(url){
-      const r = await fetch(url, { cache: 'no-store' });
-      if(!r.ok) throw new Error(url + ' → ' + r.status);
+      const r = await fetch(url, { cache:'no-store' });
+      if(!r.ok) throw new Error(url+' → '+r.status);
       return r.json();
     }
 
-    // Stats via normalized summary
     async function loadStats(){
       try{
         const s = await getJSON(API.summary);
         document.getElementById('avgBlockTime').textContent =
-          (s.avgBlockTimeSec != null) ? `${s.avgBlockTimeSec.toFixed(2)}s` : '--';
-        document.getElementById('completedTx').textContent   = fmt(s.completedTx);
-        document.getElementById('nodesConnected').textContent= fmt(s.nodesConnected);
+          (s.avgBlockTimeSec != null) ? `${s.avgBlockTimeSec.toFixed(1)}s` : '--';
+        document.getElementById('completedTx').textContent = fmt(s.completedTx);
+        document.getElementById('nodesConnected').textContent = fmt(s.nodesConnected);
       }catch(e){ console.error(e); }
     }
 
@@ -144,8 +234,8 @@
     function renderPage(){
       const tbody = document.getElementById('leaderboardBody');
       tbody.innerHTML = '';
-      const start = (currentPage - 1) * PAGE_SIZE;
-      const rows = entries.slice(start, start + PAGE_SIZE);
+      const start = (currentPage-1)*PAGE_SIZE;
+      const rows = entries.slice(start, start+PAGE_SIZE);
 
       rows.forEach((row,i)=>{
         const idx = start + i + 1;
@@ -175,55 +265,48 @@
     function next(){ if(currentPage<totalPages){ currentPage++; renderPage(); } }
 
     async function lookupPeer(){
-      const q = (document.getElementById('peerIdInput').value||'').trim();
+      const qRaw = (document.getElementById('peerIdInput').value||'').trim();
       const out = document.getElementById('peerResult');
-      if(!q){ out.textContent='Enter a peer ID or name.'; return; }
+      if(!qRaw){ out.textContent='Enter a peer ID or name.'; return; }
       out.textContent='Searching…';
 
       try{
         const data = await getJSON(API.leaderboard);
         const all = Array.isArray(data.entries)?data.entries:[];
-        let query = q;
-        const idx = query.toLowerCase().lastIndexOf('/p2p/');
-        if (idx !== -1) query = query.slice(idx+5);
-        const qLower=query.replace(/\s+/g,'').toLowerCase();
+        let query = qRaw;
+        const i = query.toLowerCase().lastIndexOf('/p2p/');
+        if(i!==-1) query = query.slice(i+5);
+        const q = query.replace(/\s+/g,'').toLowerCase();
 
-        const exact = all.find(p=>(p.peerId||'').toLowerCase()===qLower);
-        const matches = exact ? [exact] :
+        const exact = all.find(p=>(p.peerId||'').toLowerCase()===q);
+        const matches = exact? [exact] :
           all.filter(p=>{
             const pid=(p.peerId||'').toLowerCase();
             const name=(p.peerName||'').toLowerCase();
-            return pid.includes(qLower) || name.includes(qLower) || qLower.includes(pid);
+            return pid.includes(q) || name.includes(q) || q.includes(pid);
           }).slice(0,5);
 
-        if(!matches.length){
-          out.textContent='No peer matched that ID or name in the current snapshot.';
-          return;
-        }
+        if(!matches.length){ out.textContent='No peer matched that ID or name in the current snapshot.'; return; }
 
-        const lines = matches.map(p=>{
+        out.innerHTML = matches.map(p=>{
           const name=p.peerName||'—';
           const pid=p.peerId||'—';
           const score=p.score??'—';
           const reward=p.reward??'—';
           const status=p.online?'online':'offline';
           return `${name} (${pid}) • Score ${score} • Reward ${reward} • ${status}`;
-        });
-        out.innerHTML = lines.join('<br>');
-      }catch(e){
-        console.error(e);
-        out.textContent='Error fetching peer info.';
-      }
+        }).join('<br>');
+      }catch(e){ console.error(e); out.textContent='Error fetching peer info.'; }
     }
 
     function refreshAll(){ loadStats(); loadLeaderboard(); }
     refreshAll();
-    setInterval(refreshAll,30000);
+    setInterval(refreshAll, 30000);
 
-    document.getElementById('prevBtn').addEventListener('click',prev);
-    document.getElementById('nextBtn').addEventListener('click',next);
-    document.getElementById('lookupBtn').addEventListener('click',lookupPeer);
-    document.getElementById('peerIdInput').addEventListener('keydown',e=>{if(e.key==='Enter')lookupPeer();});
+    document.getElementById('prevBtn').addEventListener('click', prev);
+    document.getElementById('nextBtn').addEventListener('click', next);
+    document.getElementById('lookupBtn').addEventListener('click', lookupPeer);
+    document.getElementById('peerIdInput').addEventListener('keydown',e=>{ if(e.key==='Enter') lookupPeer(); });
   </script>
 </body>
 </html>
