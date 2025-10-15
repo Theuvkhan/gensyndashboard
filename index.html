@@ -24,6 +24,10 @@
     .peer-search button{margin-left:8px;padding:10px 18px;border:none;border-radius:8px;background:var(--ok);color:#001b12;font-weight:700;cursor:pointer}
     .muted{color:var(--muted)} footer{margin:32px 0;text-align:center}
     a{color:var(--ok);text-decoration:none}
+    .pager{display:flex;gap:10px;justify-content:center;align-items:center;margin:14px 0 26px}
+    .pager button{padding:8px 14px;border:none;border-radius:8px;background:#1b2a4a;color:#d9e6ff;cursor:pointer}
+    .pager button:disabled{opacity:.4;cursor:not-allowed}
+    .pill{background:#15233d;border-radius:999px;padding:6px 12px;color:#cfe0ff}
   </style>
 </head>
 <body>
@@ -44,7 +48,13 @@
     </div>
   </div>
 
-  <h2>🏆 Leaderboard (Top 10)</h2>
+  <h2>🏆 Leaderboard (Top 100)</h2>
+  <div class="pager">
+    <button id="prevBtn">◀ Prev</button>
+    <span class="pill"><span id="pageLabel">Page 1 / 10</span></span>
+    <button id="nextBtn">Next ▶</button>
+  </div>
+
   <table>
     <thead>
       <tr>
@@ -83,6 +93,12 @@
       leaderboard:    '/api/gensyn?path=leaderboard'
     };
 
+    const PAGE_SIZE = 10;
+    const TOP_N = 100;
+    let entries = [];            // full (top 100)
+    let currentPage = 1;         // 1..10
+    const totalPages = Math.ceil(TOP_N / PAGE_SIZE);
+
     function fmt(x){ return (x ?? '--').toLocaleString ? x.toLocaleString() : x; }
 
     async function getJSON(url){
@@ -110,40 +126,59 @@
         document.getElementById('avgBlockTime').textContent = avgBlockTime ? `${avgBlockTime}s` : '--';
         document.getElementById('completedTx').textContent = fmt(completedTx);
         document.getElementById('nodesConnected').textContent = fmt(nodesCount);
-      }catch(e){
-        console.error(e);
-      }
+      }catch(e){ console.error(e); }
     }
 
     async function loadLeaderboard(){
       const tbody = document.getElementById('leaderboardBody');
       try{
         const data = await getJSON(API.leaderboard);
-        const list = data.entries || []; // ✅ FIXED: use .entries
-        tbody.innerHTML = '';
-        list.slice(0,10).forEach((row,i)=>{
-          const peer   = row.peerName || row.peerId || '—';
-          const score  = row.score ?? '—';
-          const reward = row.reward ?? '—';
-          const status = row.online ? 'online' : 'offline';
-          const tr = document.createElement('tr');
-          tr.innerHTML = `
-            <td>${i+1}</td>
-            <td>${peer}</td>
-            <td>${score}</td>
-            <td>${reward}</td>
-            <td class="status ${status}">${status}</td>
-          `;
-          tbody.appendChild(tr);
-        });
-        if(list.length === 0){
-          tbody.innerHTML = `<tr><td class="center" colspan="5">No data</td></tr>`;
-        }
+        const all = (data.entries || [])
+          .sort((a,b)=> (b.score??0) - (a.score??0)); // just in case
+        entries = all.slice(0, TOP_N);
+        currentPage = 1;
+        renderPage();
       }catch(e){
         console.error(e);
         tbody.innerHTML = `<tr><td class="center" colspan="5">Error loading data</td></tr>`;
       }
     }
+
+    function renderPage(){
+      const tbody = document.getElementById('leaderboardBody');
+      tbody.innerHTML = '';
+      const start = (currentPage - 1) * PAGE_SIZE;
+      const rows = entries.slice(start, start + PAGE_SIZE);
+
+      rows.forEach((row, i)=>{
+        const idx = start + i + 1;
+        const peer   = row.peerName || row.peerId || '—';
+        const score  = row.score ?? '—';
+        const reward = row.reward ?? '—';
+        const status = row.online ? 'online' : 'offline';
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${idx}</td>
+          <td>${peer}</td>
+          <td>${score}</td>
+          <td>${reward}</td>
+          <td class="status ${status}">${status}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      if (rows.length === 0) {
+        tbody.innerHTML = `<tr><td class="center" colspan="5">No data</td></tr>`;
+      }
+
+      // pager UI
+      document.getElementById('pageLabel').textContent = `Page ${currentPage} / ${totalPages}`;
+      document.getElementById('prevBtn').disabled = currentPage <= 1;
+      document.getElementById('nextBtn').disabled = currentPage >= totalPages;
+    }
+
+    function prev(){ if (currentPage > 1){ currentPage--; renderPage(); } }
+    function next(){ if (currentPage < totalPages){ currentPage++; renderPage(); } }
 
     async function lookupPeer(){
       const q = document.getElementById('peerIdInput').value.trim().toLowerCase();
@@ -151,8 +186,8 @@
       if(!q){ out.textContent = 'Enter a peer ID first.'; return; }
       out.textContent = 'Searching…';
       try{
-        const data = await getJSON(API.leaderboard);
-        const list = data.entries || [];
+        // Use already-fetched entries for instant search
+        const list = entries.length ? entries : (await getJSON(API.leaderboard)).entries || [];
         const hit = list.find(p => (p.peerId || p.peerName || '').toLowerCase().includes(q));
         if(!hit){ out.textContent = 'No peer found in current snapshot.'; return; }
         out.textContent = `Peer ${hit.peerName || hit.peerId} • Score ${hit.score ?? '—'} • Reward ${hit.reward ?? '—'} • Status ${hit.online ? 'online' : 'offline'}`;
@@ -166,6 +201,9 @@
     refreshAll();
     setInterval(refreshAll, 30000);
 
+    // events
+    document.getElementById('prevBtn').addEventListener('click', prev);
+    document.getElementById('nextBtn').addEventListener('click', next);
     document.getElementById('lookupBtn').addEventListener('click', lookupPeer);
     document.getElementById('peerIdInput').addEventListener('keydown', e => { if(e.key==='Enter') lookupPeer(); });
   </script>
