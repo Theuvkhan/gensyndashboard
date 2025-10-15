@@ -10,26 +10,48 @@ const MAP = {
 // helpers to normalize stats
 const pickNum = v => (typeof v === 'number' && Number.isFinite(v)) ? v : null;
 
+// accept numbers or strings like "2s", "1500ms", "1500000000ns"
+function toSecondsMaybe(x) {
+  if (x == null) return null;
+  if (typeof x === 'number' && Number.isFinite(x)) return x;
+  if (typeof x === 'string') {
+    const v = x.trim().toLowerCase();
+    if (/^-?\d+(\.\d+)?$/.test(v)) return Number(v);        // "2" -> 2s
+    const s  = v.match(/^(-?\d+(\.\d+)?)\s*s$/);            // "2s"
+    if (s) return Number(s[1]);
+    const ms = v.match(/^(-?\d+(\.\d+)?)\s*ms$/);           // "1500ms"
+    if (ms) return Number(ms[1]) / 1000;
+    const ns = v.match(/^(-?\d+(\.\d+)?)\s*ns$/);           // "1500000000ns"
+    if (ns) return Number(ns[1]) / 1e9;
+  }
+  return null;
+}
+
 function extractAvgBlockTimeSeconds(stats) {
   if (!stats || typeof stats !== 'object') return null;
 
-  // seconds candidates
+  // include camelCase "averageBlockTimeSeconds"
   let s =
-    pickNum(stats.avg_block_time) ??
-    pickNum(stats.avgBlockTime) ??
-    pickNum(stats.average_block_time) ??
-    pickNum(stats.averageBlockTime) ??
-    pickNum(stats.avg_block_time_seconds) ??
-    pickNum(stats.average_block_time_seconds) ??
-    pickNum(stats.block_time) ??
-    pickNum(stats.block_time_seconds);
+    toSecondsMaybe(stats.averageBlockTimeSeconds) ??
+    toSecondsMaybe(stats.avg_block_time) ??
+    toSecondsMaybe(stats.avgBlockTime) ??
+    toSecondsMaybe(stats.average_block_time) ??
+    toSecondsMaybe(stats.averageBlockTime) ??
+    toSecondsMaybe(stats.avg_block_time_seconds) ??
+    toSecondsMaybe(stats.average_block_time_seconds) ??
+    toSecondsMaybe(stats.block_time) ??
+    toSecondsMaybe(stats.block_time_seconds);
 
-  // millis / nanos fallback
   if (s == null) {
-    s =
-      pickNum((stats.avg_block_time_ms ?? stats.block_time_ms) / 1000) ??
-      pickNum((stats.avg_block_time_nanos ?? stats.block_time_nanos) / 1e9) ??
-      null;
+    const ms = toSecondsMaybe(
+      (typeof stats.avg_block_time_ms !== 'undefined') ? `${stats.avg_block_time_ms}ms` :
+      (typeof stats.block_time_ms     !== 'undefined') ? `${stats.block_time_ms}ms` : null
+    );
+    const ns = toSecondsMaybe(
+      (typeof stats.avg_block_time_nanos !== 'undefined') ? `${stats.avg_block_time_nanos}ns` :
+      (typeof stats.block_time_nanos     !== 'undefined') ? `${stats.block_time_nanos}ns` : null
+    );
+    s = ms ?? ns ?? null;
   }
   return s;
 }
@@ -38,7 +60,7 @@ export default async function handler(req) {
   const { searchParams } = new URL(req.url);
   const path = searchParams.get('path');
 
-  // NEW: normalized summary for the frontend
+  // Normalized summary for the frontend
   if (path === 'summary') {
     try {
       const [ncRes, nsRes] = await Promise.all([
@@ -52,8 +74,8 @@ export default async function handler(req) {
       const avgBlockTimeSec = extractAvgBlockTimeSeconds(statsJson);
 
       const completedTx =
+        pickNum(statsJson.completedTransactions) ??      // <- camelCase from your screenshot
         pickNum(statsJson.completed_transactions) ??
-        pickNum(statsJson.completedTransactions) ??
         pickNum(statsJson.completed_tx) ?? null;
 
       const nodesConnected =
@@ -72,7 +94,7 @@ export default async function handler(req) {
     }
   }
 
-  // Existing passthrough for the 3 public endpoints
+  // Passthrough for raw endpoints
   const target = MAP[path];
   if (!target) {
     return new Response(JSON.stringify({ error: 'unknown_path' }), {
