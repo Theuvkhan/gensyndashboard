@@ -88,10 +88,10 @@
   </footer>
 
   <script>
+    // Use our proxy. 'summary' gives normalized stats (avg block time, completed tx, nodes)
     const API = {
-      nodesConnected: '/api/gensyn?path=nodes-connected',
-      networkStats:   '/api/gensyn?path=network-stats',
-      leaderboard:    '/api/gensyn?path=leaderboard'
+      summary:     '/api/gensyn?path=summary',
+      leaderboard: '/api/gensyn?path=leaderboard'
     };
 
     const PAGE_SIZE = 10;
@@ -108,20 +108,14 @@
       return r.json();
     }
 
+    // Stats via normalized summary
     async function loadStats(){
       try{
-        const [nodes, stats] = await Promise.all([
-          getJSON(API.nodesConnected),
-          getJSON(API.networkStats)
-        ]);
-
-        const avgBlockTime = stats.avg_block_time ?? stats.avgBlockTime ?? stats.block_time ?? null;
-        const completedTx  = stats.completed_transactions ?? stats.completedTransactions ?? stats.completed_tx ?? null;
-        const nodesCount   = nodes.nodes_connected ?? nodes.nodesConnected ?? nodes.count ?? nodes ?? null;
-
-        document.getElementById('avgBlockTime').textContent = avgBlockTime ? `${avgBlockTime}s` : '--';
-        document.getElementById('completedTx').textContent  = fmt(completedTx);
-        document.getElementById('nodesConnected').textContent = fmt(nodesCount);
+        const s = await getJSON(API.summary);
+        document.getElementById('avgBlockTime').textContent =
+          (s.avgBlockTimeSec != null) ? `${s.avgBlockTimeSec.toFixed(2)}s` : '--';
+        document.getElementById('completedTx').textContent   = fmt(s.completedTx);
+        document.getElementById('nodesConnected').textContent= fmt(s.nodesConnected);
       }catch(e){ console.error(e); }
     }
 
@@ -181,13 +175,18 @@
       try{
         const data = await getJSON(API.leaderboard);
         const all = Array.isArray(data.entries)?data.entries:[];
-        const qLower=q.toLowerCase();
+        let query = q;
+        const idx = query.toLowerCase().lastIndexOf('/p2p/');
+        if (idx !== -1) query = query.slice(idx+5);
+        const qLower=query.replace(/\s+/g,'').toLowerCase();
+
         const exact = all.find(p=>(p.peerId||'').toLowerCase()===qLower);
         const matches = exact ? [exact] :
-          all.filter(p=>
-            (p.peerId||'').toLowerCase().includes(qLower) ||
-            (p.peerName||'').toLowerCase().includes(qLower)
-          ).slice(0,5);
+          all.filter(p=>{
+            const pid=(p.peerId||'').toLowerCase();
+            const name=(p.peerName||'').toLowerCase();
+            return pid.includes(qLower) || name.includes(qLower) || qLower.includes(pid);
+          }).slice(0,5);
 
         if(!matches.length){
           out.textContent='No peer matched that ID or name in the current snapshot.';
