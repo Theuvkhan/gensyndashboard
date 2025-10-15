@@ -77,7 +77,6 @@
   </footer>
 
   <script>
-    // Call your own proxy routes on Vercel to avoid CORS
     const API = {
       nodesConnected: '/api/gensyn?path=nodes-connected',
       networkStats:   '/api/gensyn?path=network-stats',
@@ -113,9 +112,6 @@
         document.getElementById('nodesConnected').textContent = fmt(nodesCount);
       }catch(e){
         console.error(e);
-        document.getElementById('avgBlockTime').textContent = '--';
-        document.getElementById('completedTx').textContent = '--';
-        document.getElementById('nodesConnected').textContent = '--';
       }
     }
 
@@ -123,13 +119,13 @@
       const tbody = document.getElementById('leaderboardBody');
       try{
         const data = await getJSON(API.leaderboard);
-        const list = Array.isArray(data) ? data : (data.leaderboard || []);
+        const list = data.entries || []; // ✅ FIXED: use .entries
         tbody.innerHTML = '';
         list.slice(0,10).forEach((row,i)=>{
-          const peer   = row.peer ?? row.name ?? row.node ?? '—';
+          const peer   = row.peerName || row.peerId || '—';
           const score  = row.score ?? '—';
           const reward = row.reward ?? '—';
-          const status = (row.status || 'offline').toLowerCase();
+          const status = row.online ? 'online' : 'offline';
           const tr = document.createElement('tr');
           tr.innerHTML = `
             <td>${i+1}</td>
@@ -156,10 +152,10 @@
       out.textContent = 'Searching…';
       try{
         const data = await getJSON(API.leaderboard);
-        const list = Array.isArray(data) ? data : (data.leaderboard || []);
-        const hit = list.find(p => (p.peer || p.name || p.node || '').toLowerCase().includes(q));
+        const list = data.entries || [];
+        const hit = list.find(p => (p.peerId || p.peerName || '').toLowerCase().includes(q));
         if(!hit){ out.textContent = 'No peer found in current snapshot.'; return; }
-        out.textContent = `Peer ${hit.peer || hit.name || hit.node} • Score ${hit.score ?? '—'} • Reward ${hit.reward ?? '—'} • Status ${hit.status ?? '—'}`;
+        out.textContent = `Peer ${hit.peerName || hit.peerId} • Score ${hit.score ?? '—'} • Reward ${hit.reward ?? '—'} • Status ${hit.online ? 'online' : 'offline'}`;
       }catch(e){
         console.error(e);
         out.textContent = 'Error fetching peer info.';
