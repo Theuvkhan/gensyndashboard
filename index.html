@@ -56,7 +56,7 @@
       </tr>
     </thead>
     <tbody id="leaderboardBody">
-      <tr><td class="center" colspan="5" id="lbStatus">Loading…</td></tr>
+      <tr><td class="center" colspan="5">Loading…</td></tr>
     </tbody>
   </table>
 
@@ -77,103 +77,11 @@
   </footer>
 
   <script>
-    // Public API endpoints you shared
+    // Call your own proxy routes on Vercel to avoid CORS
     const API = {
-      nodesConnected: 'https://dashboard.gensyn.ai/api/v1/nodes-connected',
-      networkStats:   'https://dashboard.gensyn.ai/api/v1/network-stats',
-      leaderboard:    'https://dashboard.gensyn.ai/api/v1/leaderboard'
+      nodesConnected: '/api/gensyn?path=nodes-connected',
+      networkStats:   '/api/gensyn?path=network-stats',
+      leaderboard:    '/api/gensyn?path=leaderboard'
     };
 
-    function fmt(x){ return (x ?? '--').toLocaleString ? x.toLocaleString() : x; }
-
-    async function getJSON(url){
-      const r = await fetch(url, { cache: 'no-store' });
-      if(!r.ok) throw new Error(url + ' -> ' + r.status);
-      return r.json();
-    }
-
-    async function loadStats(){
-      try{
-        const [nodes, stats] = await Promise.all([
-          getJSON(API.nodesConnected),
-          getJSON(API.networkStats)
-        ]);
-
-        // Try common key names defensively
-        const avgBlockTime =
-          stats.avg_block_time ?? stats.avgBlockTime ?? stats.block_time ?? null;
-
-        const completedTx =
-          stats.completed_transactions ?? stats.completedTransactions ?? stats.completed_tx ?? null;
-
-        const nodesCount =
-          nodes.nodes_connected ?? nodes.nodesConnected ?? nodes.count ?? nodes ?? null;
-
-        document.getElementById('avgBlockTime').textContent = avgBlockTime ? `${avgBlockTime}s` : '--';
-        document.getElementById('completedTx').textContent = fmt(completedTx);
-        document.getElementById('nodesConnected').textContent = fmt(nodesCount);
-      }catch(e){
-        console.error(e);
-        document.getElementById('avgBlockTime').textContent = '--';
-        document.getElementById('completedTx').textContent = '--';
-        document.getElementById('nodesConnected').textContent = '--';
-      }
-    }
-
-    async function loadLeaderboard(){
-      const tbody = document.getElementById('leaderboardBody');
-      try{
-        const data = await getJSON(API.leaderboard);
-        const list = Array.isArray(data) ? data : (data.leaderboard || []);
-        tbody.innerHTML = '';
-        list.slice(0,10).forEach((row,i)=>{
-          const peer   = row.peer ?? row.name ?? row.node ?? '—';
-          const score  = row.score ?? '—';
-          const reward = row.reward ?? '—';
-          const status = (row.status || 'offline').toLowerCase();
-          const tr = document.createElement('tr');
-          tr.innerHTML = `
-            <td>${i+1}</td>
-            <td>${peer}</td>
-            <td>${score}</td>
-            <td>${reward}</td>
-            <td class="status ${status}">${status}</td>
-          `;
-          tbody.appendChild(tr);
-        });
-        if(list.length === 0){
-          tbody.innerHTML = `<tr><td class="center" colspan="5">No data</td></tr>`;
-        }
-      }catch(e){
-        console.error(e);
-        tbody.innerHTML = `<tr><td class="center" colspan="5">Error loading data</td></tr>`;
-      }
-    }
-
-    async function lookupPeer(){
-      const q = document.getElementById('peerIdInput').value.trim().toLowerCase();
-      const out = document.getElementById('peerResult');
-      if(!q){ out.textContent = 'Enter a peer ID first.'; return; }
-      out.textContent = 'Searching…';
-      try{
-        const data = await getJSON(API.leaderboard);
-        const list = Array.isArray(data) ? data : (data.leaderboard || []);
-        const hit = list.find(p => (p.peer || p.name || p.node || '').toLowerCase().includes(q));
-        if(!hit){ out.textContent = 'No peer found in current snapshot.'; return; }
-        out.textContent = `Peer ${hit.peer || hit.name || hit.node} • Score ${hit.score ?? '—'} • Reward ${hit.reward ?? '—'} • Status ${hit.status ?? '—'}`;
-      }catch(e){
-        console.error(e);
-        out.textContent = 'Error fetching peer info.';
-      }
-    }
-
-    // Initial load + auto refresh every 30s
-    function refreshAll(){ loadStats(); loadLeaderboard(); }
-    refreshAll();
-    setInterval(refreshAll, 30000);
-
-    document.getElementById('lookupBtn').addEventListener('click', lookupPeer);
-    document.getElementById('peerIdInput').addEventListener('keydown', e => { if(e.key==='Enter') lookupPeer(); });
-  </script>
-</body>
-</html>
+    function fmt(x){ retur
