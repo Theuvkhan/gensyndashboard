@@ -2,182 +2,178 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>⚡ Gensyn Node Dashboard</title>
   <style>
-    body {
-      background-color: #0c1424;
-      color: #fff;
-      font-family: "Inter", sans-serif;
-      text-align: center;
-      margin: 0;
-      padding: 0;
-    }
-    h1 {
-      font-size: 2rem;
-      margin-top: 1rem;
-    }
-    .stats {
-      display: flex;
-      justify-content: center;
-      margin: 1.5rem 0;
-      gap: 2rem;
-    }
-    .stat {
-      background: #111b33;
-      padding: 1rem 2rem;
-      border-radius: 12px;
-      box-shadow: 0 0 8px rgba(255, 255, 255, 0.05);
-    }
-    .stat-value {
-      font-size: 1.6rem;
-      font-weight: bold;
-      color: #00ffae;
-    }
-    .leaderboard {
-      width: 80%;
-      margin: 2rem auto;
-      border-collapse: collapse;
-    }
-    .leaderboard th, .leaderboard td {
-      border: 1px solid #1f2c44;
-      padding: 0.6rem;
-    }
-    .leaderboard th {
-      background: #15233d;
-    }
-    .leaderboard tr:nth-child(even) {
-      background: #0f1a30;
-    }
-    .offline {
-      color: #ff4747;
-    }
-    .online {
-      color: #00ffae;
-    }
-    .peer-search {
-      margin-top: 2rem;
-    }
-    input {
-      padding: 0.6rem;
-      width: 350px;
-      border-radius: 8px;
-      border: none;
-    }
-    button {
-      padding: 0.6rem 1.2rem;
-      background-color: #00ffae;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: bold;
-    }
-    button:hover {
-      background-color: #00d78a;
-    }
-    footer {
-      margin-top: 3rem;
-      font-size: 0.9rem;
-      opacity: 0.6;
-    }
+    :root { --bg:#0b1324; --card:#111b33; --muted:#8fa4c9; --ok:#00ffae; --err:#ff5a5a; }
+    *{box-sizing:border-box} body{margin:0;background:var(--bg);color:#fff;font-family:Inter,system-ui,Segoe UI,Arial}
+    h1{font-size:2rem;text-align:center;margin:16px 8px}
+    .stats{display:flex;flex-wrap:wrap;justify-content:center;gap:16px;margin:16px 0}
+    .stat{background:var(--card);padding:18px 24px;border-radius:14px;min-width:240px;text-align:center}
+    .label{font-size:.95rem;color:var(--muted);margin-bottom:6px}
+    .value{font-size:1.6rem;font-weight:700;color:var(--ok)}
+    h2{width:100%;text-align:center;margin:24px 0 8px}
+    table{width:92%;max-width:1100px;margin:0 auto;border-collapse:collapse;border-radius:12px;overflow:hidden}
+    th,td{padding:10px 12px;text-align:left;border-bottom:1px solid #1b2a4a}
+    th{background:#15233d;color:#d9e6ff}
+    tr:nth-child(even){background:#0f1a30}
+    .status.online{color:var(--ok)} .status.offline{color:var(--err)}
+    .center{display:flex;justify-content:center;align-items:center}
+    .peer-search{margin:26px 0}
+    .peer-search input{padding:10px 12px;width:420px;max-width:75vw;border:none;border-radius:8px}
+    .peer-search button{margin-left:8px;padding:10px 18px;border:none;border-radius:8px;background:var(--ok);color:#001b12;font-weight:700;cursor:pointer}
+    .muted{color:var(--muted)} footer{margin:32px 0;text-align:center}
+    a{color:var(--ok);text-decoration:none}
   </style>
 </head>
 <body>
   <h1>⚡ Gensyn Node Dashboard</h1>
+
   <div class="stats">
     <div class="stat">
-      <div>Avg Block Time</div>
-      <div id="avgBlockTime" class="stat-value">--</div>
+      <div class="label">Avg Block Time</div>
+      <div id="avgBlockTime" class="value">--</div>
     </div>
     <div class="stat">
-      <div>Completed Transactions</div>
-      <div id="completedTx" class="stat-value">--</div>
+      <div class="label">Completed Transactions</div>
+      <div id="completedTx" class="value">--</div>
     </div>
     <div class="stat">
-      <div>Nodes Connected</div>
-      <div id="nodesConnected" class="stat-value">--</div>
+      <div class="label">Nodes Connected</div>
+      <div id="nodesConnected" class="value">--</div>
     </div>
   </div>
 
   <h2>🏆 Leaderboard (Top 10)</h2>
-  <table class="leaderboard">
+  <table>
     <thead>
       <tr>
-        <th>#</th>
+        <th style="width:60px">#</th>
         <th>Peer</th>
-        <th>Score</th>
-        <th>Reward</th>
-        <th>Status</th>
+        <th style="width:160px">Score</th>
+        <th style="width:160px">Reward</th>
+        <th style="width:120px">Status</th>
       </tr>
     </thead>
     <tbody id="leaderboardBody">
-      <tr><td colspan="5">Loading...</td></tr>
+      <tr><td class="center" colspan="5" id="lbStatus">Loading…</td></tr>
     </tbody>
   </table>
 
-  <div class="peer-search">
-    <h3>🔍 Node Analytics (by Peer ID)</h3>
-    <input type="text" id="peerIdInput" placeholder="Enter Peer ID..." />
-    <button onclick="lookupPeer()">Lookup</button>
-    <p id="peerResult"></p>
+  <div class="peer-search center">
+    <div>
+      <h3 class="center">🔎 Node Analytics (by Peer ID)</h3>
+      <div class="center">
+        <input id="peerIdInput" placeholder="Enter Peer ID (e.g., Qm...)" />
+        <button id="lookupBtn">Lookup</button>
+      </div>
+      <p id="peerResult" class="center muted"></p>
+    </div>
   </div>
 
-  <footer>
-    Auto-updates every 30s • Data from public Gensyn endpoints<br>
-    Made with ❤️ by <a href="https://github.com/TheUvKhan" target="_blank" style="color:#00ffae;">@TheUvKhan</a>
+  <footer class="muted">
+    Auto-updates every 30s • Data from public Gensyn endpoints<br/>
+    Made with ❤️ by @TheUvKhan
   </footer>
 
   <script>
-    const API_BASE = "https://api.gensyn.network"; // Replace if different
+    // Public API endpoints you shared
+    const API = {
+      nodesConnected: 'https://dashboard.gensyn.ai/api/v1/nodes-connected',
+      networkStats:   'https://dashboard.gensyn.ai/api/v1/network-stats',
+      leaderboard:    'https://dashboard.gensyn.ai/api/v1/leaderboard'
+    };
 
-    async function fetchDashboardData() {
-      try {
-        // Replace with real API endpoint once available
-        const data = await fetch(`${API_BASE}/dashboard`).then(res => res.json());
+    function fmt(x){ return (x ?? '--').toLocaleString ? x.toLocaleString() : x; }
 
-        document.getElementById("avgBlockTime").textContent = data.avg_block_time + "s";
-        document.getElementById("completedTx").textContent = data.completed_transactions.toLocaleString();
-        document.getElementById("nodesConnected").textContent = data.nodes_connected.toLocaleString();
+    async function getJSON(url){
+      const r = await fetch(url, { cache: 'no-store' });
+      if(!r.ok) throw new Error(url + ' -> ' + r.status);
+      return r.json();
+    }
 
-        const tbody = document.getElementById("leaderboardBody");
-        tbody.innerHTML = "";
-        data.leaderboard.slice(0, 10).forEach((node, i) => {
-          const tr = document.createElement("tr");
+    async function loadStats(){
+      try{
+        const [nodes, stats] = await Promise.all([
+          getJSON(API.nodesConnected),
+          getJSON(API.networkStats)
+        ]);
+
+        // Try common key names defensively
+        const avgBlockTime =
+          stats.avg_block_time ?? stats.avgBlockTime ?? stats.block_time ?? null;
+
+        const completedTx =
+          stats.completed_transactions ?? stats.completedTransactions ?? stats.completed_tx ?? null;
+
+        const nodesCount =
+          nodes.nodes_connected ?? nodes.nodesConnected ?? nodes.count ?? nodes ?? null;
+
+        document.getElementById('avgBlockTime').textContent = avgBlockTime ? `${avgBlockTime}s` : '--';
+        document.getElementById('completedTx').textContent = fmt(completedTx);
+        document.getElementById('nodesConnected').textContent = fmt(nodesCount);
+      }catch(e){
+        console.error(e);
+        document.getElementById('avgBlockTime').textContent = '--';
+        document.getElementById('completedTx').textContent = '--';
+        document.getElementById('nodesConnected').textContent = '--';
+      }
+    }
+
+    async function loadLeaderboard(){
+      const tbody = document.getElementById('leaderboardBody');
+      try{
+        const data = await getJSON(API.leaderboard);
+        const list = Array.isArray(data) ? data : (data.leaderboard || []);
+        tbody.innerHTML = '';
+        list.slice(0,10).forEach((row,i)=>{
+          const peer   = row.peer ?? row.name ?? row.node ?? '—';
+          const score  = row.score ?? '—';
+          const reward = row.reward ?? '—';
+          const status = (row.status || 'offline').toLowerCase();
+          const tr = document.createElement('tr');
           tr.innerHTML = `
-            <td>${i + 1}</td>
-            <td>${node.peer}</td>
-            <td>${node.score}</td>
-            <td>${node.reward}</td>
-            <td class="${node.status === 'online' ? 'online' : 'offline'}">${node.status}</td>
+            <td>${i+1}</td>
+            <td>${peer}</td>
+            <td>${score}</td>
+            <td>${reward}</td>
+            <td class="status ${status}">${status}</td>
           `;
           tbody.appendChild(tr);
         });
-      } catch (err) {
-        console.error("Error fetching dashboard:", err);
-        document.getElementById("leaderboardBody").innerHTML =
-          "<tr><td colspan='5'>Error loading data</td></tr>";
+        if(list.length === 0){
+          tbody.innerHTML = `<tr><td class="center" colspan="5">No data</td></tr>`;
+        }
+      }catch(e){
+        console.error(e);
+        tbody.innerHTML = `<tr><td class="center" colspan="5">Error loading data</td></tr>`;
       }
     }
 
-    async function lookupPeer() {
-      const peerId = document.getElementById("peerIdInput").value.trim();
-      const result = document.getElementById("peerResult");
-      if (!peerId) return (result.textContent = "Enter a peer ID first.");
-      result.textContent = "Searching...";
-      try {
-        const data = await fetch(`${API_BASE}/peer/${peerId}`).then(res => res.json());
-        if (!data || !data.peer)
-          result.textContent = "No peer found in current snapshot.";
-        else
-          result.textContent = `Peer: ${data.peer}, Score: ${data.score}, Reward: ${data.reward}`;
-      } catch (err) {
-        console.error(err);
-        result.textContent = "Error fetching peer info.";
+    async function lookupPeer(){
+      const q = document.getElementById('peerIdInput').value.trim().toLowerCase();
+      const out = document.getElementById('peerResult');
+      if(!q){ out.textContent = 'Enter a peer ID first.'; return; }
+      out.textContent = 'Searching…';
+      try{
+        const data = await getJSON(API.leaderboard);
+        const list = Array.isArray(data) ? data : (data.leaderboard || []);
+        const hit = list.find(p => (p.peer || p.name || p.node || '').toLowerCase().includes(q));
+        if(!hit){ out.textContent = 'No peer found in current snapshot.'; return; }
+        out.textContent = `Peer ${hit.peer || hit.name || hit.node} • Score ${hit.score ?? '—'} • Reward ${hit.reward ?? '—'} • Status ${hit.status ?? '—'}`;
+      }catch(e){
+        console.error(e);
+        out.textContent = 'Error fetching peer info.';
       }
     }
 
-    fetchDashboardData();
-    setInterval(fetchDashboardData, 30000); // auto-refresh every 30s
+    // Initial load + auto refresh every 30s
+    function refreshAll(){ loadStats(); loadLeaderboard(); }
+    refreshAll();
+    setInterval(refreshAll, 30000);
+
+    document.getElementById('lookupBtn').addEventListener('click', lookupPeer);
+    document.getElementById('peerIdInput').addEventListener('keydown', e => { if(e.key==='Enter') lookupPeer(); });
   </script>
 </body>
 </html>
