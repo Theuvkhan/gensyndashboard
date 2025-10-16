@@ -4,7 +4,8 @@ export const config = { runtime: 'edge' };
 const MAP = {
   'nodes-connected': 'https://dashboard.gensyn.ai/api/v1/nodes-connected',
   'network-stats':   'https://dashboard.gensyn.ai/api/v1/network-stats',
-  'leaderboard':     'https://dashboard.gensyn.ai/api/v1/leaderboard'
+  'leaderboard':     'https://dashboard.gensyn.ai/api/v1/leaderboard',
+  'peer':            'https://dashboard.gensyn.ai/api/v1/peer' // NEW
 };
 
 // helpers to normalize stats
@@ -74,7 +75,7 @@ export default async function handler(req) {
       const avgBlockTimeSec = extractAvgBlockTimeSeconds(statsJson);
 
       const completedTx =
-        pickNum(statsJson.completedTransactions) ??      // <- camelCase from your screenshot
+        pickNum(statsJson.completedTransactions) ??      // camelCase supported
         pickNum(statsJson.completed_transactions) ??
         pickNum(statsJson.completed_tx) ?? null;
 
@@ -89,6 +90,32 @@ export default async function handler(req) {
       );
     } catch {
       return new Response(JSON.stringify({ error: 'summary_failed' }), {
+        status: 502, headers: { 'content-type': 'application/json' }
+      });
+    }
+  }
+
+  // NEW: peer lookup passthrough -> /api/gensyn?path=peer&id=<PEER_ID>
+  if (path === 'peer') {
+    const id = searchParams.get('id');
+    if (!id) {
+      return new Response(JSON.stringify({ error: 'missing_id' }), {
+        status: 400, headers: { 'content-type': 'application/json' }
+      });
+    }
+    try {
+      const url = `${MAP['peer']}?id=${encodeURIComponent(id)}`;
+      const r = await fetch(url, { headers: { 'user-agent': 'Mozilla/5.0' } });
+      return new Response(r.body, {
+        status: r.status,
+        headers: {
+          'content-type': r.headers.get('content-type') || 'application/json',
+          'cache-control': 'public, s-maxage=20, stale-while-revalidate=60',
+          'access-control-allow-origin': '*'
+        }
+      });
+    } catch {
+      return new Response(JSON.stringify({ error: 'peer_lookup_failed' }), {
         status: 502, headers: { 'content-type': 'application/json' }
       });
     }
