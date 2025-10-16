@@ -266,39 +266,61 @@
     function next(){ if(currentPage<totalPages){ currentPage++; renderPage(); } }
 
     async function lookupPeer(){
-      const qRaw = (document.getElementById('peerIdInput').value||'').trim();
-      const out = document.getElementById('peerResult');
-      if(!qRaw){ out.textContent='Enter a peer ID or name.'; return; }
-      out.textContent='Searching…';
+  const qRaw = (document.getElementById('peerIdInput').value||'').trim();
+  const out = document.getElementById('peerResult');
+  if(!qRaw){ out.textContent='Enter a peer ID or name.'; return; }
+  out.textContent='Searching…';
 
-      try{
-        const data = await getJSON(API.leaderboard);
-        const all = Array.isArray(data.entries)?data.entries:[];
-        let query = qRaw;
-        const i = query.toLowerCase().lastIndexOf('/p2p/');
-        if(i!==-1) query = query.slice(i+5);
-        const q = query.replace(/\s+/g,'').toLowerCase();
+  try{
+    // normalize (strip /p2p/ tail and spaces)
+    let query = qRaw;
+    const i = query.toLowerCase().lastIndexOf('/p2p/');
+    if(i!==-1) query = query.slice(i+5);
+    const q = query.replace(/\s+/g,'').toLowerCase();
 
-        const exact = all.find(p=>(p.peerId||'').toLowerCase()===q);
-        const matches = exact? [exact] :
-          all.filter(p=>{
-            const pid=(p.peerId||'').toLowerCase();
-            const name=(p.peerName||'').toLowerCase();
-            return pid.includes(q) || name.includes(q) || q.includes(pid);
-          }).slice(0,5);
+    // 1) Try current snapshot (leaderboard top 100)
+    const data = await getJSON(API.leaderboard);
+    const all = Array.isArray(data.entries)?data.entries:[];
+    const exact = all.find(p=>(p.peerId||'').toLowerCase()===q);
+    const matches = exact? [exact] :
+      all.filter(p=>{
+        const pid=(p.peerId||'').toLowerCase();
+        const name=(p.peerName||'').toLowerCase();
+        return pid.includes(q) || name.includes(q) || q.includes(pid);
+      }).slice(0,5);
 
-        if(!matches.length){ out.textContent='No peer matched that ID or name in the current snapshot.'; return; }
-
-        out.innerHTML = matches.map(p=>{
-          const name=p.peerName||'—';
-          const pid=p.peerId||'—';
-          const score=p.score??'—';
-          const reward=p.reward??'—';
-          const status=p.online?'online':'offline';
-          return `${name} (${pid}) • Score ${score} • Reward ${reward} • ${status}`;
-        }).join('<br>');
-      }catch(e){ console.error(e); out.textContent='Error fetching peer info.'; }
+    if(matches.length){
+      out.innerHTML = matches.map(p=>{
+        const name=p.peerName||'—';
+        const pid=p.peerId||'—';
+        const score=p.score??'—';
+        const reward=p.reward??'—';
+        const status=p.online?'online':'offline';
+        return `${name} (${pid}) • Score ${score} • Reward ${reward} • ${status}`;
+      }).join('<br>');
+      return;
     }
+
+    // 2) Fallback: direct peer lookup API (works beyond top 100)
+    if (q.length >= 10) {
+      const peer = await getJSON(API.peer(q));
+      if (peer && peer.peerId) {
+        const name=peer.peerName||'—';
+        const pid=peer.peerId||qRaw;
+        const score=peer.score??'—';
+        const reward=peer.reward??'—';
+        const status=peer.online?'online':'offline';
+        out.innerHTML = `${name} (${pid}) • Score ${score} • Reward ${reward} • ${status}`;
+        return;
+      }
+    }
+
+    out.textContent='No peer matched that ID or name in the current snapshot.';
+  }catch(e){
+    console.error(e);
+    out.textContent='Error fetching peer info.';
+  }
+}
 
     function refreshAll(){ loadStats(); loadLeaderboard(); }
     refreshAll();
