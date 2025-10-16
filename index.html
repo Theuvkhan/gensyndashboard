@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>⚡ Gensyn Node Dashboard</title>
 
-  <!-- Optional: a monospace/pixel-ish feel without external fonts -->
   <style>
     :root{
       /* Gensyn-like palette (coffee browns + warm text + neon tag) */
@@ -118,6 +117,38 @@
     a{color:var(--tag); text-decoration:none}
     .x-link{color:#1DA1F2 !important; font-weight:800}
     .x-link:hover{text-decoration:underline}
+
+    /* === Lookup result cards === */
+    .result-grid{
+      display:grid;
+      gap:12px;
+      max-width:900px;
+      margin:12px auto 0;
+    }
+    .result-card{
+      background:var(--panel);
+      border:1px solid var(--stroke);
+      border-radius:10px;
+      padding:14px 16px;
+    }
+    .result-title{
+      font-weight:800;
+      font-size:16px;
+      margin-bottom:6px;
+    }
+    .result-row{
+      display:flex;
+      flex-wrap:wrap;
+      gap:12px;
+      margin:4px 0;
+    }
+    .result-label{
+      color:var(--muted);
+      min-width:90px;
+    }
+    .result-value{
+      font-weight:800;
+    }
   </style>
 </head>
 <body>
@@ -187,12 +218,12 @@
   </div>
 
   <script>
-    /* Use your existing proxy summary (api/gensyn.js) */
+    /* API routes (your Edge proxy) */
     const API = {
-  summary:     '/api/gensyn?path=summary',
-  leaderboard: '/api/gensyn?path=leaderboard',
-  peer:        (id) => `/api/gensyn?path=peer&id=${encodeURIComponent(id)}`
-};
+      summary:     '/api/gensyn?path=summary',
+      leaderboard: '/api/gensyn?path=leaderboard',
+      peer:        (id) => `/api/gensyn?path=peer&id=${encodeURIComponent(id)}`
+    };
 
     const PAGE_SIZE = 10;
     const TOP_N = 100;
@@ -265,62 +296,82 @@
     function prev(){ if(currentPage>1){ currentPage--; renderPage(); } }
     function next(){ if(currentPage<totalPages){ currentPage++; renderPage(); } }
 
-    async function lookupPeer(){
-  const qRaw = (document.getElementById('peerIdInput').value||'').trim();
-  const out = document.getElementById('peerResult');
-  if(!qRaw){ out.textContent='Enter a peer ID or name.'; return; }
-  out.textContent='Searching…';
-
-  try{
-    // normalize (strip /p2p/ tail and spaces)
-    let query = qRaw;
-    const i = query.toLowerCase().lastIndexOf('/p2p/');
-    if(i!==-1) query = query.slice(i+5);
-    const q = query.replace(/\s+/g,'').toLowerCase();
-
-    // 1) Try current snapshot (leaderboard top 100)
-    const data = await getJSON(API.leaderboard);
-    const all = Array.isArray(data.entries)?data.entries:[];
-    const exact = all.find(p=>(p.peerId||'').toLowerCase()===q);
-    const matches = exact? [exact] :
-      all.filter(p=>{
-        const pid=(p.peerId||'').toLowerCase();
-        const name=(p.peerName||'').toLowerCase();
-        return pid.includes(q) || name.includes(q) || q.includes(pid);
-      }).slice(0,5);
-
-    if(matches.length){
-      out.innerHTML = matches.map(p=>{
-        const name=p.peerName||'—';
-        const pid=p.peerId||'—';
-        const score=p.score??'—';
-        const reward=p.reward??'—';
-        const status=p.online?'online':'offline';
-        return `${name} (${pid}) • Score ${score} • Reward ${reward} • ${status}`;
-      }).join('<br>');
-      return;
+    /* ---------- Lookup card renderer ---------- */
+    function renderCard(p){
+      const name   = p.peerName || '—';
+      const pid    = p.peerId   || '—';
+      const score  = p.score ?? '—';
+      const reward = p.reward ?? '—';
+      const status = p.online ? 'online' : 'offline';
+      return `
+        <div class="result-card">
+          <div class="result-title">${name}</div>
+          <div class="result-row">
+            <span class="result-label">Peer ID</span>
+            <span class="result-value">${pid}</span>
+          </div>
+          <div class="result-row">
+            <span class="result-label">Score</span>
+            <span class="result-value">${score}</span>
+          </div>
+          <div class="result-row">
+            <span class="result-label">Reward</span>
+            <span class="result-value">${reward}</span>
+          </div>
+          <div class="result-row">
+            <span class="result-label">Status</span>
+            <span class="result-value status ${status}">${status}</span>
+          </div>
+        </div>`;
     }
 
-    // 2) Fallback: direct peer lookup API (works beyond top 100)
-    if (q.length >= 10) {
-      const peer = await getJSON(API.peer(query)); // keep original casing
-      if (peer && peer.peerId) {
-        const name=peer.peerName||'—';
-        const pid=peer.peerId||qRaw;
-        const score=peer.score??'—';
-        const reward=peer.reward??'—';
-        const status=peer.online?'online':'offline';
-        out.innerHTML = `${name} (${pid}) • Score ${score} • Reward ${reward} • ${status}`;
-        return;
+    /* ---------- Lookup (snapshot -> fallback peer API) ---------- */
+    async function lookupPeer(){
+      const qRaw = (document.getElementById('peerIdInput').value||'').trim();
+      const out = document.getElementById('peerResult');
+      if(!qRaw){ out.textContent='Enter a peer ID or name.'; return; }
+      out.textContent='Searching…';
+
+      try{
+        // normalize (strip /p2p/ tail and spaces)
+        let query = qRaw;
+        const i = query.toLowerCase().lastIndexOf('/p2p/');
+        if(i!==-1) query = query.slice(i+5);
+        const q = query.replace(/\s+/g,'').toLowerCase();
+
+        // 1) Try current snapshot (leaderboard top 100)
+        const data = await getJSON(API.leaderboard);
+        const all = Array.isArray(data.entries)?data.entries:[];
+        const exact = all.find(p=>(p.peerId||'').toLowerCase()===q);
+        const matches = exact? [exact] :
+          all.filter(p=>{
+            const pid=(p.peerId||'').toLowerCase();
+            const name=(p.peerName||'').toLowerCase();
+            return pid.includes(q) || name.includes(q) || q.includes(pid);
+          }).slice(0,5);
+
+        if(matches.length){
+          out.classList.remove('muted');
+          out.innerHTML = `<div class="result-grid">${matches.map(renderCard).join('')}</div>`;
+          return;
+        }
+
+        // 2) Fallback: direct peer lookup API (works beyond top 100)
+        if (q.length >= 10) {
+          const peer = await getJSON(API.peer(query)); // keep original casing!
+          if (peer && peer.peerId) {
+            out.classList.remove('muted');
+            out.innerHTML = `<div class="result-grid">${renderCard(peer)}</div>`;
+            return;
+          }
+        }
+
+        out.textContent='No peer matched that ID or name in the current snapshot.';
+      }catch(e){
+        console.error(e);
+        out.textContent='Error fetching peer info.';
       }
     }
-
-    out.textContent='No peer matched that ID or name in the current snapshot.';
-  }catch(e){
-    console.error(e);
-    out.textContent='Error fetching peer info.';
-  }
-}
 
     function refreshAll(){ loadStats(); loadLeaderboard(); }
     refreshAll();
