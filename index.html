@@ -121,34 +121,45 @@
     /* === Lookup result cards === */
     .result-grid{
       display:grid;
-      gap:12px;
-      max-width:900px;
-      margin:12px auto 0;
+      gap:16px;
+      max-width:1100px;
+      margin:16px auto 0;
     }
     .result-card{
       background:var(--panel);
       border:1px solid var(--stroke);
-      border-radius:10px;
-      padding:14px 16px;
+      border-radius:14px;
+      padding:22px 24px;
+      box-shadow:
+    0 14px 48px rgba(0,0,0,.45),   /* depth */
+    inset 0 1px 0 rgba(255,255,255,.04);
     }
     .result-title{
       font-weight:800;
-      font-size:16px;
-      margin-bottom:6px;
+      font-size:20px;
+      margin-bottom:10px;
     }
     .result-row{
       display:flex;
       flex-wrap:wrap;
-      gap:12px;
-      margin:4px 0;
+      gap:16px;
+      margin:8px 0;
     }
     .result-label{
-      color:var(--muted);
-      min-width:90px;
-    }
+  color:var(--muted);
+  min-width:120px;                 /* align columns */
+  font-size:14px;
+}
     .result-value{
-      font-weight:800;
-    }
+  font-weight:800;
+  font-size:15px;                  /* slightly larger values */
+}
+    /* small pop when card renders */
+@keyframes popIn { 
+  from { transform:scale(.98); opacity:.8; } 
+  to   { transform:scale(1);   opacity:1; } 
+}
+.result-card.pop { animation: popIn .25s ease-out; }
   </style>
 </head>
 <body>
