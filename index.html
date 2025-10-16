@@ -118,41 +118,48 @@
     .x-link{color:#1DA1F2 !important; font-weight:800}
     .x-link:hover{text-decoration:underline}
 
-    /* === Lookup result cards === */
-    .result-grid{
-      display:grid;
-      gap:16px;
-      max-width:1100px;
-      margin:16px auto 0;
-    }
-    .result-card{
-      background:var(--panel);
-      border:1px solid var(--stroke);
-      border-radius:14px;
-      padding:22px 24px;
-      box-shadow:
-    0 14px 48px rgba(0,0,0,.45),   /* depth */
-    inset 0 1px 0 rgba(255,255,255,.04);
-    }
-    .result-title{
-      font-weight:800;
-      font-size:20px;
-      margin-bottom:10px;
-    }
-    .result-row{
-      display:flex;
-      flex-wrap:wrap;
-      gap:16px;
-      margin:8px 0;
-    }
-    .result-label{
-  color:var(--muted);
-  min-width:120px;                 /* align columns */
-  font-size:14px;
+    /* === Lookup result cards (bigger & clearer) === */
+.result-grid{
+  display:grid;
+  gap:20px;
+  max-width: 1280px;        /* wider card area */
+  margin:18px auto 0;
 }
-    .result-value{
+
+.result-card{
+  background:var(--panel);
+  border:1px solid var(--stroke);
+  border-radius:16px;        /* bigger rounded corners */
+  padding:28px 30px;         /* more space inside */
+  box-shadow:
+    0 18px 56px rgba(0,0,0,.45),
+    inset 0 1px 0 rgba(255,255,255,.04);
+}
+
+.result-title{
   font-weight:800;
-  font-size:15px;                  /* slightly larger values */
+  font-size:24px;            /* bigger name */
+  margin-bottom:14px;
+}
+
+.result-row{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:flex-start;
+  gap:18px;
+  margin:12px 0;             /* taller rows */
+}
+
+.result-label{
+  color:var(--muted);
+  min-width:140px;           /* wider label column */
+  font-size:15px;            /* larger label text */
+}
+
+.result-value{
+  font-weight:800;
+  font-size:18px;            /* larger value text */
+  word-break:break-all;      /* long peer IDs wrap nicely */
 }
     /* small pop when card renders */
 @keyframes popIn { 
