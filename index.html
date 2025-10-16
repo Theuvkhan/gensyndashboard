@@ -303,7 +303,7 @@
 
     // 2) Fallback: direct peer lookup API (works beyond top 100)
     if (q.length >= 10) {
-      const peer = await getJSON(API.peer(q));
+      const peer = await getJSON(API.peer(query)); // keep original casing
       if (peer && peer.peerId) {
         const name=peer.peerName||'—';
         const pid=peer.peerId||qRaw;
