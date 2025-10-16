@@ -189,9 +189,10 @@
   <script>
     /* Use your existing proxy summary (api/gensyn.js) */
     const API = {
-      summary:     '/api/gensyn?path=summary',
-      leaderboard: '/api/gensyn?path=leaderboard'
-    };
+  summary:     '/api/gensyn?path=summary',
+  leaderboard: '/api/gensyn?path=leaderboard',
+  peer:        (id) => `/api/gensyn?path=peer&id=${encodeURIComponent(id)}`
+};
 
     const PAGE_SIZE = 10;
     const TOP_N = 100;
