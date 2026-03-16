@@ -1,0 +1,1046 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Gensyn Network Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+
+  <style>
+    /* === Bold Creative Color Scheme === */
+    :root{
+      /* Primary Brand Colors - Vibrant & Gradient Ready */
+      --primary-dark: #0a0e27;        /* Deep navy/black */
+      --primary-surface: #1a1f3a;     /* Dark blue surface */
+      --accent-primary: #ff006e;      /* Hot pink/magenta */
+      --accent-secondary: #00d9ff;    /* Neon cyan */
+      --accent-tertiary: #8338ec;     /* Electric purple */
+      --accent-gold: #ffbe0b;         /* Vibrant gold */
+      
+      /* Neutrals */
+      --bg-dark: #050a1f;             /* Ultra-dark navy */
+      --surface: #0f1b3c;             /* Dark blue surface */
+      --surface-hover: #1a2a4d;       /* Lighter blue */
+      --text-primary: #ffffff;        /* Pure white */
+      --text-muted: #a0b0d8;          /* Muted blue-white */
+      --border: rgba(0, 217, 255, 0.15); /* Cyan border with glow */
+      
+      /* Status Colors - Vivid */
+      --status-online: #00ff88;       /* Neon green */
+      --status-offline: #ff3366;      /* Hot pink */
+      --status-warning: #ffbe0b;      /* Gold warning */
+    }
+
+    /* === Base Styles === */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      height: 100%;
+      width: 100%;
+    }
+
+    body {
+      background: linear-gradient(135deg, var(--bg-dark) 0%, #1a0a2e 50%, var(--bg-dark) 100%);
+      color: var(--text-primary);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 14px;
+      line-height: 1.6;
+      letter-spacing: 0;
+      position: relative;
+      overflow-x: hidden;
+      min-height: 100vh;
+    }
+
+    /* Animated gradient background with glow */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(circle at 20% 50%, rgba(255, 0, 110, 0.15) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(0, 217, 255, 0.15) 0%, transparent 50%),
+        radial-gradient(circle at 40% 0%, rgba(131, 56, 236, 0.1) 0%, transparent 50%);
+      opacity: 1;
+      pointer-events: none;
+      z-index: 0;
+      animation: glowShift 15s ease-in-out infinite;
+    }
+
+    @keyframes glowShift {
+      0%, 100% {
+        opacity: 0.6;
+      }
+      50% {
+        opacity: 0.8;
+      }
+    }
+
+    .wrap {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* === Header/Top Bar === */
+    .top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 24px;
+      border-bottom: 2px solid var(--accent-secondary);
+      background: rgba(10, 14, 39, 0.6);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 0 30px rgba(0, 217, 255, 0.1);
+    }
+
+    .brand-section {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-ring {
+      width: 32px;
+      height: 32px;
+      background: url("./gensyn-ring.png") center/contain no-repeat;
+      filter: drop-shadow(0 0 8px rgba(255, 0, 110, 0.4)) drop-shadow(0 0 4px rgba(0, 217, 255, 0.2));
+      transition: filter 200ms ease;
+      animation: pulse 3s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { filter: drop-shadow(0 0 8px rgba(255, 0, 110, 0.3)) drop-shadow(0 0 4px rgba(0, 217, 255, 0.1)); }
+      50% { filter: drop-shadow(0 0 12px rgba(255, 0, 110, 0.5)) drop-shadow(0 0 8px rgba(0, 217, 255, 0.3)); }
+    }
+
+    .brand {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      background: linear-gradient(90deg, var(--accent-primary) 0%, var(--accent-secondary) 50%, var(--accent-tertiary) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: gradientShift 6s ease infinite;
+      background-size: 200% auto;
+    }
+
+    @keyframes gradientShift {
+      0%, 100% { background-position: 0% center; }
+      50% { background-position: 100% center; }
+    }
+
+    .top-right {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .time-range-selector {
+      display: flex;
+      gap: 6px;
+      background: rgba(255,255,255,0.05);
+      padding: 6px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+    }
+
+    .time-range-btn {
+      padding: 6px 12px;
+      background: transparent;
+      color: var(--text-muted);
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 500;
+      transition: all 150ms ease;
+    }
+
+    .time-range-btn:hover {
+      background: rgba(6, 182, 212, 0.1);
+      color: var(--accent-cyan);
+    }
+
+    /* === Main Content === */
+    .content {
+      flex: 1;
+      padding: 32px 24px;
+      max-width: 1400px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    /* === Page Title === */
+    .page-header {
+      margin-bottom: 32px;
+    }
+
+    h1 {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: var(--text-primary);
+      letter-spacing: -0.5px;
+    }
+
+    .header-subtitle {
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+
+    /* === Stats Grid === */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+      margin-bottom: 40px;
+    }
+
+    .stat {
+      background: rgba(26, 47, 90, 0.4);
+      border: 2px solid var(--accent-secondary);
+      border-radius: 16px;
+      padding: 28px;
+      transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255, 0, 110, 0.1) 0%, rgba(0, 217, 255, 0.1) 100%);
+      opacity: 0;
+      transition: opacity 300ms ease;
+      border-radius: 14px;
+    }
+
+    .stat::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 100% 0%, rgba(0, 217, 255, 0.3) 0%, transparent 80%);
+      opacity: 0;
+      transition: opacity 300ms ease;
+      border-radius: 14px;
+    }
+
+    .stat:hover {
+      border-color: var(--accent-primary);
+      background: rgba(26, 47, 90, 0.6);
+      transform: translateY(-8px);
+      box-shadow: 
+        0 20px 40px rgba(255, 0, 110, 0.2),
+        0 0 40px rgba(0, 217, 255, 0.15),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    }
+
+    .stat:hover::before {
+      opacity: 1;
+    }
+
+    .stat:hover::after {
+      opacity: 1;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .stat-value {
+      font-size: 36px;
+      font-weight: 800;
+      background: linear-gradient(90deg, var(--accent-secondary) 0%, var(--accent-gold) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-family: 'JetBrains Mono', monospace;
+      letter-spacing: -0.5px;
+      word-break: break-word;
+      position: relative;
+      z-index: 1;
+    }
+
+    .stat-tag {
+      display: inline-block;
+      font-size: 9px;
+      color: var(--bg-dark);
+      background: linear-gradient(90deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+      padding: 4px 10px;
+      border-radius: 6px;
+      margin-left: 8px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      position: relative;
+      z-index: 1;
+      box-shadow: 0 4px 12px rgba(255, 0, 110, 0.3);
+    }
+
+    /* === Section Header === */
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+      margin-top: 40px;
+    }
+
+    h2 {
+      font-size: 18px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* === Pagination === */
+    .pager {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      padding: 12px 20px;
+      background: rgba(26, 47, 90, 0.5);
+      border: 2px solid var(--accent-secondary);
+      color: var(--text-primary);
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 700;
+      transition: all 250ms cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+      transform: translateX(-100%);
+      transition: transform 600ms ease;
+    }
+
+    .btn:hover:not(:disabled)::before {
+      transform: translateX(100%);
+    }
+
+    .btn:hover:not(:disabled) {
+      background: rgba(26, 47, 90, 0.8);
+      border-color: var(--accent-primary);
+      color: var(--accent-secondary);
+      transform: translateY(-2px);
+      box-shadow: 
+        0 8px 24px rgba(0, 217, 255, 0.2),
+        0 0 20px rgba(255, 0, 110, 0.1);
+    }
+
+    .btn:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    .btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+      border-color: var(--text-muted);
+    }
+
+    .btn.primary {
+      background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+      color: var(--bg-dark);
+      border-color: transparent;
+      font-weight: 800;
+      box-shadow: 0 8px 20px rgba(255, 0, 110, 0.3);
+    }
+
+    .btn.primary:hover:not(:disabled) {
+      background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+      transform: translateY(-4px);
+      box-shadow: 
+        0 12px 32px rgba(255, 0, 110, 0.4),
+        0 0 20px rgba(0, 217, 255, 0.3);
+      border-color: transparent;
+    }
+
+    .pill {
+      background: rgba(0, 217, 255, 0.15);
+      border: 2px solid var(--accent-secondary);
+      color: var(--accent-secondary);
+      padding: 10px 18px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+
+    /* === Table === */
+    .table-wrap {
+      margin-bottom: 40px;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 2px solid var(--accent-secondary);
+      background: rgba(15, 27, 60, 0.4);
+      box-shadow: 0 8px 32px rgba(0, 217, 255, 0.1);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: transparent;
+    }
+
+    thead {
+      background: linear-gradient(90deg, rgba(255, 0, 110, 0.05) 0%, rgba(0, 217, 255, 0.05) 100%);
+      border-bottom: 2px solid var(--accent-secondary);
+    }
+
+    th {
+      padding: 18px 18px;
+      text-align: left;
+      font-weight: 800;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      background: linear-gradient(90deg, var(--accent-secondary) 0%, var(--accent-gold) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      border-right: 1px solid rgba(0, 217, 255, 0.1);
+    }
+
+    th:last-child {
+      border-right: none;
+    }
+
+    td {
+      padding: 16px 18px;
+      border-bottom: 1px solid rgba(0, 217, 255, 0.08);
+      color: var(--text-primary);
+      font-size: 13px;
+    }
+
+    tbody tr {
+      transition: all 250ms ease;
+      background: rgba(26, 47, 90, 0.2);
+    }
+
+    tbody tr:hover {
+      background: rgba(26, 47, 90, 0.5);
+      box-shadow: inset 0 0 20px rgba(0, 217, 255, 0.1);
+    }
+
+    tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    /* Status Badges */
+    .status {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      border: 1.5px solid;
+    }
+
+    .status.online {
+      background: rgba(0, 255, 136, 0.15);
+      color: var(--status-online);
+      border-color: rgba(0, 255, 136, 0.3);
+      box-shadow: 0 0 12px rgba(0, 255, 136, 0.2);
+    }
+
+    .status.offline {
+      background: rgba(255, 51, 102, 0.15);
+      color: var(--status-offline);
+      border-color: rgba(255, 51, 102, 0.3);
+      box-shadow: 0 0 12px rgba(255, 51, 102, 0.2);
+    }
+
+    .center {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    /* === Search Block === */
+    .search-block {
+      background: rgba(15, 27, 60, 0.4);
+      border: 2px solid var(--accent-secondary);
+      border-radius: 16px;
+      padding: 40px 28px;
+      margin-bottom: 40px;
+      box-shadow: 0 8px 32px rgba(0, 217, 255, 0.1);
+    }
+
+    .search-title {
+      font-size: 18px;
+      font-weight: 800;
+      text-align: center;
+      margin-bottom: 12px;
+      color: var(--text-primary);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      background: linear-gradient(90deg, var(--accent-secondary) 0%, var(--accent-primary) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .search-row {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    input {
+      background: rgba(10, 14, 39, 0.6);
+      color: var(--text-primary);
+      border: 2px solid var(--accent-secondary);
+      padding: 14px 18px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-family: 'JetBrains Mono', monospace;
+      transition: all 250ms cubic-bezier(0.4, 0, 0.2, 1);
+      max-width: 500px;
+      flex: 1;
+      min-width: 200px;
+    }
+
+    input::placeholder {
+      color: var(--text-muted);
+    }
+
+    input:focus {
+      outline: none;
+      border-color: var(--accent-primary);
+      background: rgba(10, 14, 39, 0.9);
+      box-shadow: 
+        0 0 0 4px rgba(0, 217, 255, 0.15),
+        0 0 20px rgba(255, 0, 110, 0.2);
+    }
+
+    /* === Result Cards === */
+    .result-grid {
+      display: grid;
+      gap: 24px;
+      max-width: 1200px;
+      margin: 32px auto 0;
+    }
+
+    .result-card {
+      background: rgba(15, 27, 60, 0.4);
+      border: 2px solid var(--accent-secondary);
+      border-radius: 16px;
+      padding: 32px;
+      transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+      animation: slideIn 400ms cubic-bezier(0.34, 1.56, 0.64, 1);
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 8px 32px rgba(0, 217, 255, 0.1);
+    }
+
+    .result-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255, 0, 110, 0.05) 0%, rgba(0, 217, 255, 0.05) 100%);
+      opacity: 0;
+      transition: opacity 300ms ease;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(16px) scale(0.98);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .result-card:hover {
+      border-color: var(--accent-primary);
+      background: rgba(15, 27, 60, 0.6);
+      box-shadow: 
+        0 16px 48px rgba(255, 0, 110, 0.15),
+        0 0 40px rgba(0, 217, 255, 0.15),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      transform: translateY(-8px);
+    }
+
+    .result-card:hover::before {
+      opacity: 1;
+    }
+
+    .result-title {
+      font-weight: 800;
+      font-size: 24px;
+      margin-bottom: 24px;
+      background: linear-gradient(90deg, var(--accent-secondary) 0%, var(--accent-gold) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      position: relative;
+      z-index: 1;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .result-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      gap: 28px;
+      margin-bottom: 20px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid rgba(0, 217, 255, 0.1);
+      position: relative;
+      z-index: 1;
+    }
+
+    .result-row:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .result-label {
+      color: var(--text-muted);
+      min-width: 140px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 700;
+    }
+
+    .result-value {
+      font-weight: 700;
+      font-size: 16px;
+      color: var(--accent-secondary);
+      font-family: 'JetBrains Mono', monospace;
+      word-break: break-all;
+      flex: 1;
+      padding: 8px 12px;
+      background: rgba(0, 217, 255, 0.08);
+      border: 1px solid rgba(0, 217, 255, 0.15);
+      border-radius: 6px;
+    }
+
+    /* === Footer === */
+    footer {
+      margin-top: auto;
+      padding: 32px 24px;
+      text-align: center;
+      border-top: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 12px;
+      background: rgba(15, 23, 42, 0.3);
+    }
+
+    footer a {
+      color: var(--accent-cyan);
+      text-decoration: none;
+      font-weight: 600;
+      transition: color 150ms ease;
+    }
+
+    footer a:hover {
+      color: var(--accent-indigo);
+      text-decoration: underline;
+    }
+
+    .muted {
+      color: var(--text-muted);
+    }
+
+    /* === Responsive Design === */
+    @media (max-width: 768px) {
+      .content {
+        padding: 20px 16px;
+      }
+
+      h1 {
+        font-size: 24px;
+      }
+
+      .stats {
+        grid-template-columns: 1fr;
+      }
+
+      .top {
+        padding: 16px;
+      }
+
+      .top-right {
+        gap: 12px;
+      }
+
+      .time-range-selector {
+        display: none;
+      }
+
+      .stat-value {
+        font-size: 24px;
+      }
+
+      table {
+        font-size: 12px;
+      }
+
+      th, td {
+        padding: 12px 10px;
+      }
+
+      .search-row {
+        flex-direction: column;
+      }
+
+      input {
+        max-width: none;
+        width: 100%;
+      }
+
+      .btn {
+        flex: 1;
+        min-width: 100px;
+      }
+
+      .result-grid {
+        padding: 0;
+      }
+
+      .result-card {
+        padding: 20px;
+      }
+
+      .result-row {
+        flex-direction: column;
+        gap: 8px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .content {
+        padding: 16px 12px;
+      }
+
+      h1 {
+        font-size: 20px;
+      }
+
+      h2 {
+        font-size: 14px;
+      }
+
+      .stat-value {
+        font-size: 20px;
+      }
+
+      .pager {
+        gap: 8px;
+      }
+
+      .btn {
+        padding: 8px 12px;
+        font-size: 12px;
+      }
+
+      .pill {
+        padding: 6px 12px;
+        font-size: 11px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <!-- Header with brand and controls -->
+    <header class="top">
+      <div class="brand-section">
+        <div class="brand-ring" aria-hidden="true"></div>
+        <div class="brand">gensyn</div>
+      </div>
+      <div class="top-right">
+        <div class="time-range-selector">
+          <button class="time-range-btn active">24h</button>
+          <button class="time-range-btn">7d</button>
+          <button class="time-range-btn">30d</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="content">
+      <!-- Page Header -->
+      <div class="page-header">
+        <h1>Network Dashboard</h1>
+        <p class="header-subtitle">Real-time network metrics and node performance analytics</p>
+      </div>
+
+      <!-- Key Metrics Stats -->
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-label">Average Block Time <span class="stat-tag">On-Chain</span></div>
+          <div id="avgBlockTime" class="stat-value">--</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Total Transactions <span class="stat-tag">All Time</span></div>
+          <div id="completedTx" class="stat-value">--</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Active Nodes <span class="stat-tag">Connected</span></div>
+          <div id="nodesConnected" class="stat-value">--</div>
+        </div>
+      </div>
+
+      <!-- Leaderboard Section -->
+      <div class="section-header">
+        <h2>Top Performers</h2>
+        <div class="pager">
+          <button id="prevBtn" class="btn">← Previous</button>
+          <span class="pill" id="pageLabel">Page 1 / 10</span>
+          <button id="nextBtn" class="btn">Next →</button>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:60px">#</th>
+              <th>Node ID</th>
+              <th style="width:140px">Score</th>
+              <th style="width:140px">Reward</th>
+              <th style="width:100px">Status</th>
+            </tr>
+          </thead>
+          <tbody id="leaderboardBody">
+            <tr><td colspan="5" class="center" style="padding: 32px">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Node Analytics/Search Section -->
+      <div class="search-block">
+        <div class="search-title">Node Analytics</div>
+        <p style="text-align: center; color: var(--text-muted); font-size: 13px; margin-bottom: 20px;">Search by peer ID or node name</p>
+        <div class="search-row">
+          <input id="peerIdInput" placeholder="Enter peer ID (e.g., Qm...)" />
+          <button id="lookupBtn" class="btn primary">Search</button>
+        </div>
+        <p id="peerResult" class="center muted" style="margin-top:16px"></p>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+      Auto-updates every 30 seconds • Data from public Gensyn endpoints<br/>
+      Made with ❤️ by <a href="https://x.com/TheUvKhan" target="_blank" rel="noopener">@TheUvKhan</a>
+    </footer>
+  </div>
+
+  <script>
+    /* API routes (your Edge proxy) */
+    const API = {
+      summary:     '/api/gensyn?path=summary',
+      leaderboard: '/api/gensyn?path=leaderboard',
+      peer:        (id) => `/api/gensyn?path=peer&id=${encodeURIComponent(id)}`
+    };
+
+    const PAGE_SIZE = 10;
+    const TOP_N = 100;
+    let entries = [];
+    let currentPage = 1;
+    const totalPages = Math.ceil(TOP_N / PAGE_SIZE);
+
+    const fmt = x => (x ?? '--').toLocaleString ? x.toLocaleString() : x;
+
+    async function getJSON(url){
+      const r = await fetch(url, { cache:'no-store' });
+      if(!r.ok) throw new Error(url+' → '+r.status);
+      return r.json();
+    }
+
+    async function loadStats(){
+      try{
+        const s = await getJSON(API.summary);
+        document.getElementById('avgBlockTime').textContent =
+          (s.avgBlockTimeSec != null) ? `${s.avgBlockTimeSec.toFixed(1)}s` : '--';
+        document.getElementById('completedTx').textContent = fmt(s.completedTx);
+        document.getElementById('nodesConnected').textContent = fmt(s.nodesConnected);
+      }catch(e){ console.error(e); }
+    }
+
+    async function loadLeaderboard(){
+      const tbody = document.getElementById('leaderboardBody');
+      try{
+        const data = await getJSON(API.leaderboard);
+        const all = (data.entries || []).sort((a,b)=>(b.score??0)-(a.score??0));
+        entries = all.slice(0, TOP_N);
+        currentPage = 1;
+        renderPage();
+      }catch(e){
+        console.error(e);
+        tbody.innerHTML = `<tr><td class="center" colspan="5">Error loading data</td></tr>`;
+      }
+    }
+
+    function renderPage(){
+      const tbody = document.getElementById('leaderboardBody');
+      tbody.innerHTML = '';
+      const start = (currentPage-1)*PAGE_SIZE;
+      const rows = entries.slice(start, start+PAGE_SIZE);
+
+      rows.forEach((row,i)=>{
+        const idx = start + i + 1;
+        const peer   = row.peerName || row.peerId || '—';
+        const score  = row.score ?? '—';
+        const reward = row.reward ?? '—';
+        const status = row.online ? 'online' : 'offline';
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${idx}</td>
+          <td>${peer}</td>
+          <td>${score}</td>
+          <td>${reward}</td>
+          <td class="status ${status}">${status}</td>`;
+        tbody.appendChild(tr);
+      });
+
+      if(rows.length===0){
+        tbody.innerHTML = `<tr><td class="center" colspan="5">No data</td></tr>`;
+      }
+      document.getElementById('pageLabel').textContent = `Page ${currentPage} / ${totalPages}`;
+      document.getElementById('prevBtn').disabled = currentPage<=1;
+      document.getElementById('nextBtn').disabled = currentPage>=totalPages;
+    }
+
+    function prev(){ if(currentPage>1){ currentPage--; renderPage(); } }
+    function next(){ if(currentPage<totalPages){ currentPage++; renderPage(); } }
+
+    /* ---------- Lookup card renderer ---------- */
+    function renderCard(p){
+      const name   = p.peerName || '—';
+      const pid    = p.peerId   || '—';
+      const score  = p.score ?? '—';
+      const reward = p.reward ?? '—';
+      const status = p.online ? 'online' : 'offline';
+      return `
+        <div class="result-card">
+          <div class="result-title">${name}</div>
+          <div class="result-row">
+            <span class="result-label">Peer ID</span>
+            <span class="result-value">${pid}</span>
+          </div>
+          <div class="result-row">
+            <span class="result-label">Score</span>
+            <span class="result-value">${score}</span>
+          </div>
+          <div class="result-row">
+            <span class="result-label">Reward</span>
+            <span class="result-value">${reward}</span>
+          </div>
+          <div class="result-row">
+            <span class="result-label">Status</span>
+            <span class="result-value status ${status}">${status}</span>
+          </div>
+        </div>`;
+    }
+
+    /* ---------- Lookup (snapshot -> fallback peer API) ---------- */
+    async function lookupPeer(){
+      const qRaw = (document.getElementById('peerIdInput').value||'').trim();
+      const out = document.getElementById('peerResult');
+      if(!qRaw){ out.textContent='Enter a peer ID or name.'; return; }
+      out.textContent='Searching…';
+
+      try{
+        // normalize (strip /p2p/ tail and spaces)
+        let query = qRaw;
+        const i = query.toLowerCase().lastIndexOf('/p2p/');
+        if(i!==-1) query = query.slice(i+5);
+        const q = query.replace(/\s+/g,'').toLowerCase();
+
+        // 1) Try current snapshot (leaderboard top 100)
+        const data = await getJSON(API.leaderboard);
+        const all = Array.isArray(data.entries)?data.entries:[];
+        const exact = all.find(p=>(p.peerId||'').toLowerCase()===q);
+        const matches = exact? [exact] :
+          all.filter(p=>{
+            const pid=(p.peerId||'').toLowerCase();
+            const name=(p.peerName||'').toLowerCase();
+            return pid.includes(q) || name.includes(q) || q.includes(pid);
+          }).slice(0,5);
+
+        if(matches.length){
+          out.classList.remove('muted');
+          out.innerHTML = `<div class="result-grid">${matches.map(renderCard).join('')}</div>`;
+          return;
+        }
+
+        // 2) Fallback: direct peer lookup API (works beyond top 100)
+        if (q.length >= 10) {
+          const peer = await getJSON(API.peer(query)); // keep original casing!
+          if (peer && peer.peerId) {
+            out.classList.remove('muted');
+            out.innerHTML = `<div class="result-grid">${renderCard(peer)}</div>`;
+            return;
+          }
+        }
+
+        out.textContent='No peer matched that ID or name in the current snapshot.';
+      }catch(e){
+        console.error(e);
+        out.textContent='Error fetching peer info.';
+      }
+    }
+
+    function refreshAll(){ loadStats(); loadLeaderboard(); }
+    refreshAll();
+    setInterval(refreshAll, 30000);
+
+    document.getElementById('prevBtn').addEventListener('click', prev);
+    document.getElementById('nextBtn').addEventListener('click', next);
+    document.getElementById('lookupBtn').addEventListener('click', lookupPeer);
+    document.getElementById('peerIdInput').addEventListener('keydown',e=>{ if(e.key==='Enter') lookupPeer(); });
+  </script>
+</body>
+</html>
